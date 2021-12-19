@@ -1,1 +1,1 @@
-# workspaces-workshop
+# ws-workshop
