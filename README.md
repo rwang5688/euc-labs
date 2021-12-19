@@ -1,1 +1,1 @@
-# ws-workshop
+# ws-lab
