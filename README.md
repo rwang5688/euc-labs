@@ -1,1 +1,1 @@
-# ws-lab
+# euc-labs
