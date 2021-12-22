@@ -17,9 +17,9 @@
 
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  VPC WorkSpaces Lab VPC Infrastructure one public and two private subnets
+  VPC AppStream2 Lab VPC Infrastructure one public and two private subnets
   template. The lambda custom resource will return the AZ (Zone Name) based on the Zone ID
-  in the RegionMap. This ensures that WorkSpaces can be deployed to both private subnets provisioned.
+  in the RegionMap. This ensures that AppStream2 can be deployed to both private subnets provisioned.
 
 Metadata:
   'AWS::CloudFormation::Interface':
@@ -152,65 +152,65 @@ Resources:
       ServiceToken: !GetAtt fnZoneIdtoZoneName.Arn
       ZoneId: !FindInMap [ RegionMap, !Ref 'AWS::Region', az2 ]
 
-  WorkSpacesLabVPC:
+  AppStream2LabVPC:
     Type: 'AWS::EC2::VPC'
     Properties:
       CidrBlock: !Sub '10.${Octet}.0.0/16'
       Tags:
         - Key: Name
-          Value: WorkSpaces VPC
+          Value: AppStream2 VPC
   PublicSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       AvailabilityZone: !GetAtt getAZ1.ZoneName
       CidrBlock: !Sub '10.${Octet}.0.0/24'
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: WorkSpaces Public Subnet
+          Value: AppStream2 Public Subnet
   PrivateSubnet1:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       AvailabilityZone: !GetAtt getAZ1.ZoneName
       CidrBlock: !Sub '10.${Octet}.1.0/24'
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: WorkSpaces Private Subnet1
+          Value: AppStream2 Private Subnet1
   PrivateSubnet2:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       AvailabilityZone: !GetAtt getAZ2.ZoneName
       CidrBlock: !Sub '10.${Octet}.2.0/24'
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: WorkSpaces Private Subnet2
+          Value: AppStream2 Private Subnet2
   InternetGateway:
     Type: 'AWS::EC2::InternetGateway'
     Properties:
       Tags:
         - Key: Name
-          Value: WorkSpaces IGW
+          Value: AppStream2 IGW
         - Key: Network
           Value: Public
   GatewayToInternet:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       InternetGatewayId: !Ref InternetGateway
   PublicRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       Tags:
         - Key: Network
           Value: Public
         - Key: Name
-          Value: WorkSpaces Public Route Table
+          Value: AppStream2 Public Route Table
   PublicRoute:
     Type: 'AWS::EC2::Route'
     DependsOn: GatewayToInternet
@@ -230,21 +230,21 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       Tags:
         - Key: Name
-          Value: WorkSpaces NatGateway
+          Value: AppStream2 NatGateway
   NatPublicIP:
     Type: 'AWS::EC2::EIP'
-    DependsOn: WorkSpacesLabVPC
+    DependsOn: AppStream2LabVPC
     Properties:
       Domain: vpc
   PrivateRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref WorkSpacesLabVPC
+      VpcId: !Ref AppStream2LabVPC
       Tags:
         - Key: Network
           Value: Private
         - Key: Name
-          Value: WorkSpaces Private Route Table
+          Value: AppStream2 Private Route Table
   PrivateRoute:
     Type: 'AWS::EC2::Route'
     Properties:
@@ -261,3 +261,17 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: '*'
+            Resource: '*'
+      RouteTableIds:
+        - !Ref PrivateRouteTable
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref AppStream2LabVPC
